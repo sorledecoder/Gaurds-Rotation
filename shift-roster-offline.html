@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Shift Roster</title>
+<style>
+  :root {
+    --primary: #00798c;
+    --primary-dark: #1c2a41;
+    --danger: #c83c3c;
+    --bg: #f5f7fa;
+    --text-dark: #282828;
+    --day-color: #2e7d32;
+    --night-color: #f9a825;
+    --off-color: #757575;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    background: var(--bg);
+    font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    color: var(--text-dark);
+    overflow-x: hidden;
+  }
+  header {
+    background: var(--primary-dark);
+    color: #fff;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+  }
+  header h1 { font-size: 18px; margin: 0; font-weight: 700; }
+  .icon-btn {
+    background: rgba(255,255,255,0.15);
+    border: none;
+    color: #fff;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  .tabs {
+    display: flex;
+    background: #fff;
+    border-bottom: 1px solid #ddd;
+    position: sticky;
+    top: 52px;
+    z-index: 19;
+  }
+  .tab {
+    flex: 1;
+    text-align: center;
+    padding: 12px 0;
+    font-weight: 600;
+    color: #888;
+    border-bottom: 3px solid transparent;
+    cursor: pointer;
+  }
+  .tab.active {
+    color: var(--primary-dark);
+    border-bottom-color: var(--primary);
+  }
+  .page { display: none; padding: 14px; padding-bottom: 40px; }
+  .page.active { display: block; }
+  .shift-card {
+    background: #fff;
+    border-radius: 12px;
+    margin-bottom: 14px;
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  }
+  .shift-header {
+    padding: 12px 14px;
+    color: #fff;
+    font-weight: 700;
+    font-size: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .shift-header.day { background: var(--day-color); }
+  .shift-header.night { background: var(--night-color); color: #3a2c00; }
+  .shift-header.off { background: var(--off-color); }
+  .shift-body { padding: 12px 14px; }
+  .sup-row { font-size: 14px; margin-bottom: 8px; }
+  .sup-row b { color: var(--primary-dark); }
+  .view-btn {
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 9px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .modal-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 50;
+    align-items: flex-end;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-sheet {
+    background: #fff;
+    width: 100%;
+    max-width: 480px;
+    border-radius: 16px 16px 0 0;
+    padding: 18px;
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+  .modal-sheet h2 { margin: 0 0 10px 0; font-size: 17px; color: var(--primary-dark); }
+  .modal-sheet .person-line {
+    padding: 8px 0;
+    border-bottom: 1px solid #eee;
+    font-size: 14px;
+  }
+  .modal-close {
+    display: block;
+    width: 100%;
+    margin-top: 14px;
+    background: #e6e8ec;
+    border: none;
+    border-radius: 8px;
+    padding: 10px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .settings-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: var(--bg);
+    z-index: 60;
+    overflow-y: auto;
+  }
+  .settings-overlay.open { display: block; }
+  .settings-header {
+    background: var(--primary-dark);
+    color: #fff;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+  }
+  .settings-body { padding: 16px; padding-bottom: 60px; }
+  .settings-body label {
+    display: block;
+    font-size: 12px;
+    color: #666;
+    margin: 14px 0 4px 0;
+    font-weight: 600;
+  }
+  .settings-body input[type="text"],
+  .settings-body input[type="date"],
+  .settings-body textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: inherit;
+  }
+  .settings-body textarea { min-height: 90px; resize: vertical; }
+  .crew-block {
+    background: #fff;
+    border-radius: 10px;
+    padding: 12px;
+    margin-top: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .crew-block h3 { margin: 0; font-size: 14px; color: var(--primary-dark); }
+  .save-btn {
+    width: 100%;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 14px;
+    font-size: 15px;
+    font-weight: 700;
+    margin-top: 24px;
+    cursor: pointer;
+  }
+  .hint { font-size: 11px; color: #999; margin-top: 2px; }
+  .page-section-title {
+    font-weight: 700;
+    color: var(--primary-dark);
+    margin: 18px 0 6px 0;
+    font-size: 14px;
+    border-bottom: 2px solid var(--primary-dark);
+    padding-bottom: 4px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Shift Roster</h1>
+  <button class="icon-btn" id="btnSettings">⚙ Settings</button>
+</header>
+
+<div class="tabs">
+  <div class="tab active" data-page="LMP">LMP</div>
+  <div class="tab" data-page="OneSubsea">OneSubsea</div>
+</div>
+
+<div id="pageLMP" class="page active"></div>
+<div id="pageOneSubsea" class="page"></div>
+
+<div class="modal-overlay" id="personnelModal">
+  <div class="modal-sheet">
+    <h2 id="modalTitle">Personnel</h2>
+    <div id="modalList"></div>
+    <button class="modal-close" id="modalCloseBtn">Close</button>
+  </div>
+</div>
+
+<div class="settings-overlay" id="settingsOverlay">
+  <div class="settings-header">
+    <span style="font-weight:700;">Settings</span>
+    <button class="icon-btn" id="btnCloseSettings">Close</button>
+  </div>
+  <div class="settings-body">
+    <label>Rotation Start Date (on this date, Crew A = Day, Crew B = Night, Crew C = Off)</label>
+    <input type="date" id="startDateInput">
+
+    <div class="page-section-title">LMP</div>
+    <div id="lmpCrewSettings"></div>
+
+    <div class="page-section-title">OneSubsea</div>
+    <div id="ossCrewSettings"></div>
+
+    <button class="save-btn" id="btnSaveSettings">Save</button>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = "shiftRosterData_v1";
+const PAGES = ["LMP", "OneSubsea"];
+const CREW_LABELS = ["Crew A", "Crew B", "Crew C"];
+const SHIFT_NAMES = ["Day Shift", "Night Shift", "Off-Duty"];
+const SHIFT_CLASSES = ["day", "night", "off"];
+
+function defaultData() {
+  const emptyCrews = () => [
+    { supervisor: "", personnel: [] },
+    { supervisor: "", personnel: [] },
+    { supervisor: "", personnel: [] }
+  ];
+  return {
+    startDate: new Date().toISOString().slice(0, 10),
+    pages: { LMP: { crews: emptyCrews() }, OneSubsea: { crews: emptyCrews() } }
+  };
+}
+
+function loadData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return defaultData();
+    const parsed = JSON.parse(raw);
+    if (!parsed.pages || !parsed.pages.LMP || !parsed.pages.OneSubsea) return defaultData();
+    return parsed;
+  } catch (e) {
+    return defaultData();
+  }
+}
+
+function saveData(data) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+let appData = loadData();
+
+function getShiftForCrew(crewIndex, startDateStr) {
+  const start = new Date(startDateStr + "T00:00:00");
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  let daysElapsed = Math.floor((today - start) / 86400000);
+  if (daysElapsed < 0) daysElapsed = 0;
+  const cyclePos = ((daysElapsed % 21) + 21) % 21;
+  const crewCyclePos = (cyclePos + crewIndex * 7) % 21;
+  if (crewCyclePos <= 6) return 0;
+  if (crewCyclePos <= 13) return 1;
+  return 2;
+}
+
+function getCrewForShift(shiftIndex, startDateStr) {
+  for (let c = 0; c < 3; c++) {
+    if (getShiftForCrew(c, startDateStr) === shiftIndex) return c;
+  }
+  return 0;
+}
+
+function renderPages() {
+  PAGES.forEach(pageName => {
+    const container = document.getElementById("page" + pageName);
+    container.innerHTML = "";
+    for (let shiftIndex = 0; shiftIndex < 3; shiftIndex++) {
+      const crewIndex = getCrewForShift(shiftIndex, appData.startDate);
+      const crew = appData.pages[pageName].crews[crewIndex];
+      const supName = crew.supervisor && crew.supervisor.trim() ? crew.supervisor : "(not set)";
+
+      const card = document.createElement("div");
+      card.className = "shift-card";
+      card.innerHTML = `
+        <div class="shift-header ${SHIFT_CLASSES[shiftIndex]}">
+          <span>${SHIFT_NAMES[shiftIndex]}</span>
+        </div>
+        <div class="shift-body">
+          <div class="sup-row">Supervisor: <b>${escapeHtml(supName)}</b></div>
+          <button class="view-btn" data-page="${pageName}" data-shift="${shiftIndex}">View Personnel</button>
+        </div>
+      `;
+      container.appendChild(card);
+    }
+  });
+
+  document.querySelectorAll(".view-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const pageName = btn.getAttribute("data-page");
+      const shiftIndex = parseInt(btn.getAttribute("data-shift"), 10);
+      openPersonnelModal(pageName, shiftIndex);
+    });
+  });
+}
+
+function escapeHtml(str) {
+  const div = document.createElement("div");
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function openPersonnelModal(pageName, shiftIndex) {
+  const crewIndex = getCrewForShift(shiftIndex, appData.startDate);
+  const crew = appData.pages[pageName].crews[crewIndex];
+
+  document.getElementById("modalTitle").textContent =
+    `${SHIFT_NAMES[shiftIndex]} — ${pageName}`;
+
+  const listEl = document.getElementById("modalList");
+  listEl.innerHTML = "";
+
+  const supLine = document.createElement("div");
+  supLine.className = "person-line";
+  supLine.innerHTML = `<b>Supervisor:</b> ${escapeHtml(crew.supervisor || "(not set)")}`;
+  listEl.appendChild(supLine);
+
+  if (crew.personnel.length === 0) {
+    const empty = document.createElement("div");
+    empty.className = "person-line";
+    empty.textContent = "No personnel entered yet. Add names in Settings.";
+    listEl.appendChild(empty);
+  } else {
+    crew.personnel.forEach(name => {
+      if (!name.trim()) return;
+      const line = document.createElement("div");
+      line.className = "person-line";
+      line.textContent = name;
+      listEl.appendChild(line);
+    });
+  }
+
+  document.getElementById("personnelModal").classList.add("open");
+}
+
+document.getElementById("modalCloseBtn").addEventListener("click", () => {
+  document.getElementById("personnelModal").classList.remove("open");
+});
+document.getElementById("personnelModal").addEventListener("click", (e) => {
+  if (e.target.id === "personnelModal") {
+    document.getElementById("personnelModal").classList.remove("open");
+  }
+});
+
+document.querySelectorAll(".tab").forEach(tab => {
+  tab.addEventListener("click", () => {
+    document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+    document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+    tab.classList.add("active");
+    document.getElementById("page" + tab.getAttribute("data-page")).classList.add("active");
+  });
+});
+
+function buildCrewSettingsHtml(pageName) {
+  let html = "";
+  for (let c = 0; c < 3; c++) {
+    html += `
+      <div class="crew-block">
+        <h3>${CREW_LABELS[c]}</h3>
+        <label>Supervisor Name</label>
+        <input type="text" id="${pageName}_sup_${c}" placeholder="Supervisor name">
+        <label>Personnel (one name per line)</label>
+        <textarea id="${pageName}_pers_${c}" placeholder="Name 1&#10;Name 2&#10;Name 3"></textarea>
+        <div class="hint">Up to 12 names supported — one per line.</div>
+      </div>
+    `;
+  }
+  return html;
+}
+
+function openSettings() {
+  document.getElementById("lmpCrewSettings").innerHTML = buildCrewSettingsHtml("LMP");
+  document.getElementById("ossCrewSettings").innerHTML = buildCrewSettingsHtml("OneSubsea");
+  document.getElementById("startDateInput").value = appData.startDate;
+
+  PAGES.forEach(pageName => {
+    for (let c = 0; c < 3; c++) {
+      const crew = appData.pages[pageName].crews[c];
+      document.getElementById(`${pageName}_sup_${c}`).value = crew.supervisor || "";
+      document.getElementById(`${pageName}_pers_${c}`).value = (crew.personnel || []).join("\n");
+    }
+  });
+
+  document.getElementById("settingsOverlay").classList.add("open");
+}
+
+document.getElementById("btnSettings").addEventListener("click", openSettings);
+document.getElementById("btnCloseSettings").addEventListener("click", () => {
+  document.getElementById("settingsOverlay").classList.remove("open");
+});
+
+document.getElementById("btnSaveSettings").addEventListener("click", () => {
+  const startDateVal = document.getElementById("startDateInput").value;
+  if (startDateVal) appData.startDate = startDateVal;
+
+  PAGES.forEach(pageName => {
+    for (let c = 0; c < 3; c++) {
+      const supVal = document.getElementById(`${pageName}_sup_${c}`).value.trim();
+      const persRaw = document.getElementById(`${pageName}_pers_${c}`).value;
+      const persList = persRaw.split("\n").map(s => s.trim()).filter(s => s.length > 0).slice(0, 12);
+      appData.pages[pageName].crews[c].supervisor = supVal;
+      appData.pages[pageName].crews[c].personnel = persList;
+    }
+  });
+
+  saveData(appData);
+  document.getElementById("settingsOverlay").classList.remove("open");
+  renderPages();
+});
+
+renderPages();
+</script>
+
+</body>
+</html>
