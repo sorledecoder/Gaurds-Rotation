@@ -4,6 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Shift Roster</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1c2a41">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <style>
   :root {
     --primary: #00798c;
@@ -200,6 +204,27 @@
     border-bottom: 2px solid var(--primary-dark);
     padding-bottom: 4px;
   }
+  .install-banner {
+    display: none;
+    background: var(--primary);
+    color: #fff;
+    padding: 10px 14px;
+    font-size: 13px;
+    text-align: center;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .install-banner.show { display: flex; }
+  .install-banner button {
+    background: #fff;
+    color: var(--primary-dark);
+    border: none;
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-weight: 700;
+    font-size: 12px;
+    cursor: pointer;
+  }
 </style>
 </head>
 <body>
@@ -208,6 +233,11 @@
   <h1>Shift Roster</h1>
   <button class="icon-btn" id="btnSettings">⚙ Settings</button>
 </header>
+
+<div class="install-banner" id="installBanner">
+  <span>Install this app on your home screen</span>
+  <button id="installBtn">Install</button>
+</div>
 
 <div class="tabs">
   <div class="tab active" data-page="LMP">LMP</div>
@@ -449,6 +479,29 @@ document.getElementById("btnSaveSettings").addEventListener("click", () => {
 });
 
 renderPages();
+
+// ---------- PWA install prompt ----------
+let deferredInstallPrompt = null;
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  document.getElementById("installBanner").classList.add("show");
+});
+document.getElementById("installBtn").addEventListener("click", async () => {
+  document.getElementById("installBanner").classList.remove("show");
+  if (deferredInstallPrompt) {
+    deferredInstallPrompt.prompt();
+    await deferredInstallPrompt.userChoice;
+    deferredInstallPrompt = null;
+  }
+});
+
+// ---------- Register service worker for offline use ----------
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("sw.js").catch(() => {});
+  });
+}
 </script>
 
 </body>
